@@ -3,7 +3,7 @@
 
 # But not these files...
 !payload_dumper.py
+!puffin.patch
+!README.md
 !requirements.txt
 !update_metadata_pb2.py
-!output/.gitkeep
-!README.md

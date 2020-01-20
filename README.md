@@ -1,26 +1,50 @@
-# payload dumper
-Script tested on Yandex Amber OTA's (full and incremental) under Linux(but may works on Windows too)
+# Payload Dumper
 
-## System requirement
+## Dependencies
+- python3
+- protobuf
+- [bsdiff](#bsdiff)
+- [puffin](#puffin)
 
-- Python3, pip
-- google protobuf for python `pip install protobuf`
+## External tools
 
-## Guide
+### bsdiff
+###### Source
+https://android.googlesource.com/platform/external/bsdiff/+archive/79d0acf62e249d4d3b38cd41e5b47bdee336145a.tar.gz
 
-- Make you sure you have Python 3.6 installed.
-- Download payload_dumper.py and update_metadata_pb2.py
-- Extract your OTA zip and place payload.bin in the same folder as these files.
-- Open PowerShell, Command Prompt, or Terminal depending on your OS.
-- Enter the following command: python -m pip install protobuf
+###### Dependencies
+- libbrotli-dev
+- libbz2-dev
+- libdivsufsort-dev
 
-### Full OTA
+###### Build
+```shell
+make
+sudo cp bsdiff bspatch /usr/local/bin/
+sudo cp -r include/bsdiff /usr/local/include/bsdiff
+sudo cp libbsdiff.so libbspatch.so /usr/local/lib/
+sudo ldconfig
+```
 
-- When that’s finished, enter this command: python payload_dumper.py payload.bin
-- This will start to extract the images within the payload.bin file to the output folder you are in.
+### puffin
+###### Source
+https://android.googlesource.com/platform/external/puffin/+archive/bc7745523aef2d7f620ca16aa6ab11a8e38dc60e.tar.gz
 
-### Incremental OTA
+###### Dependencies
+- protobuf-compiler
+- libgoogle-glog-dev
+- libgflags-dev
+- libprotobuf-dev
+- libgtest-dev
 
-- Copy original images (from full OTA or dumped from devices) to old folder (with part name + .img, ex: boot.img, system.img)
-- run python payload_dumper.py --diff payload.bin
-- file extracted to the output folder you are in.
+###### Patch
+```shell
+git apply puffin.patch
+```
+
+###### Build
+```shell
+protoc -Isrc --cpp_out=src src/puffin.proto
+make
+sudo cp puffin_binary /usr/local/bin/puffin
+```

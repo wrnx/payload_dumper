@@ -1,0 +1,50 @@
+--- Makefile
++++ Makefile
+@@ -14,7 +14,11 @@
+ 	puff_reader.cc \
+ 	puff_writer.cc \
+ 	puffin_stream.cc \
+-	utils.cc
++	utils.cc \
++	puffin.pb.cc \
++	puffpatch.cc \
++	puffdiff.cc \
++	main.cc
+ 
+ UNITTEST_SOURCES = \
+ 	bit_io_unittest.cc \
+@@ -29,6 +33,7 @@
+ PUFFIN_OBJECTS = $(addprefix $(OBJDIR)/, $(PUFFIN_SOURCES:.cc=.o))
+ UNITTEST_OBJECTS = $(addprefix $(OBJDIR)/, $(UNITTEST_SOURCES:.cc=.o))
+ 
++PUFFIN = puffin_binary
+ LIBPUFFIN = libpuffin.so
+ UNITTESTS = puffin_unittests
+ 
+@@ -39,13 +44,16 @@
+ 
+ VPATH = $(SRCDIR)
+ 
+-all: $(LIBPUFFIN)
++all: $(PUFFIN)
+ 
+ $(OBJDIR):
+ 	mkdir -p $@
+ 
+ $(PUFFIN_OBJECTS): | $(OBJDIR)
+ 
++$(PUFFIN): $(PUFFIN_OBJECTS)
++	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@ $(LDLIBS) -lbspatch -lbsdiff
++
+ $(LIBPUFFIN): $(PUFFIN_OBJECTS)
+ 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $^ -o $@ $(LDLIBS)
+ 
+@@ -55,7 +63,7 @@
+ test: $(LIBPUFFIN) $(UNITTESTS)
+ 
+ clean:
+-	rm -rf $(OBJDIR) $(LIBPUFFIN) $(UNITTESTS)
++	rm -rf $(OBJDIR) $(PUFFIN) $(LIBPUFFIN) $(UNITTESTS)
+ 
+ $(OBJDIR)/%.o: %.cc
+ 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
