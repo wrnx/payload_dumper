@@ -1,3 +1,6 @@
 [submodule "puffin"]
 	path = puffin
 	url = https://android.googlesource.com/platform/external/puffin
+[submodule "bsdiff"]
+	path = bsdiff
+	url = https://android.googlesource.com/platform/external/bsdiff
