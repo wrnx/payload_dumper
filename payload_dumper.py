@@ -30,11 +30,11 @@ def b64(x):
     return base64.b64encode(x).decode('utf-8')
 
 
-def replace_operation(op, payload_file, out_file):
+def replace_operation(op, args, out_file):
     """ Replace the dst_extents on the drive with the attached data, zero padding out to block size """
     assert op.type == op.REPLACE or op.type == op.REPLACE_BZ or op.type == op.REPLACE_XZ
 
-    data = payload_file.read(op.data_length)
+    data = args.payload_file.read(op.data_length)
 
     data_sha256_hash = hashlib.sha256()
     data_sha256_hash.update(data)
@@ -53,7 +53,7 @@ def replace_operation(op, payload_file, out_file):
             out_file.write(bytes('\0', encoding='utf-8') * (block_size - (len(data) % block_size)))
 
 
-def move_operation(op, out_file):
+def move_operation(op, args, out_file):
     """ Copy the data in src_extents to dst_extents. (deprecated) """
     assert op.type == op.MOVE
 
@@ -72,7 +72,7 @@ def move_operation(op, out_file):
         out_file.write(data)
 
 
-def bsdiff_operation(op, out_file): # TODO
+def bsdiff_operation(op, args, out_file): # TODO
     """
     Read src_length bytes from src_extents into memory, perform
     bspatch with attached data, write new data to dst_extents, zero padding
@@ -83,7 +83,7 @@ def bsdiff_operation(op, out_file): # TODO
     pass
 
 
-def source_copy_operation(op, out_file):
+def source_copy_operation(op, args, out_file):
     """
     Copy the data in src_extents in the old partition to
     dst_extents in the new partition
@@ -106,7 +106,7 @@ def source_copy_operation(op, out_file):
         out_file.write(data)
 
 
-def source_diff_operation(op, payload_file, out_file):
+def source_diff_operation(op, args, out_file):
     """
     Read the data in src_extents in the old partition, perform
     bspatch or puffpatch with the attached data and write the new data to dst_extents in the
@@ -132,7 +132,7 @@ def source_diff_operation(op, payload_file, out_file):
 
     with tempfile.NamedTemporaryFile('wb') as patch_file:
         patch_sha256_hash = hashlib.sha256()
-        patch = payload_file.read(op.data_length)
+        patch = args.payload_file.read(op.data_length)
         patch_sha256_hash.update(patch)
         assert patch_sha256_hash.digest() == op.data_sha256_hash
         patch_file.write(patch)
@@ -148,7 +148,7 @@ def source_diff_operation(op, payload_file, out_file):
             subprocess.run(['bspatch', old_filename, out_file.name, patch_file.name, old_extents[:-1], new_extents[:-1]])
 
 
-def zero_operation(op, out_file):
+def zero_operation(op, args, out_file):
     """ Write zeros to the destination dst_extents """
     assert op.type == op.ZERO or op.type == op.DISCARD
 
@@ -174,27 +174,27 @@ def dump_partition(args, block_size, data_offset, partition):
                            (op.DESCRIPTOR.EnumValueName('Type', op.type), op.data_length, b64(op.data_sha256_hash), op.src_length, b64(op.src_sha256_hash)))
 
                 if op.type == op.REPLACE:
-                    replace_operation(op, args.payload_file, out_file)
+                    replace_operation(op, args, out_file)
                 elif op.type == op.REPLACE_BZ:
-                    replace_operation(op, args.payload_file, out_file)
+                    replace_operation(op, args, out_file)
                 elif op.type == op.MOVE:
-                    move_operation(op, out_file)
+                    move_operation(op, args, out_file)
 #                elif op.type == op.BSDIFF:
-#                    bsdiff_operation(op, out_file)
+#                    bsdiff_operation(op, args, out_file)
                 elif op.type == op.SOURCE_COPY:
-                    source_copy_operation(op, out_file)
+                    source_copy_operation(op, args, out_file)
                 elif op.type == op.SOURCE_BSDIFF:
-                    source_diff_operation(op, args.payload_file, out_file)
+                    source_diff_operation(op, args, out_file)
                 elif op.type == op.ZERO:
-                    zero_operation(op, out_file)
+                    zero_operation(op, args, out_file)
                 elif op.type == op.DISCARD:
-                    zero_operation(op, out_file)
+                    zero_operation(op, args, out_file)
                 elif op.type == op.REPLACE_XZ:
-                    replace_operation(op, args.payload_file, out_file)
+                    replace_operation(op, args, out_file)
                 elif op.type == op.PUFFDIFF:
-                    source_diff_operation(op, args.payload_file, out_file)
+                    source_diff_operation(op, args, out_file)
                 elif op.type == op.BROTLI_BSDIFF:
-                    source_diff_operation(op, args.payload_file, out_file)
+                    source_diff_operation(op, args, out_file)
                 else:
                     print('    Unsupported operation type: %s' % op.DESCRIPTOR.EnumValueName('Type', op.type), file=sys.stderr)
                     os.unlink(out_file.name)
@@ -223,7 +223,10 @@ def dump_partition(args, block_size, data_offset, partition):
                 data_size -= len(data)
 
             if partition_sha256_hash.digest() != partition.new_partition_info.hash:
-                print('    Hash mismatch (excepted="%s", actual="%s")' % (b64(partition.new_partition_info.hash), b64(partition_sha256_hash.digest())), file=sys.stderr)
+                print('    Hash mismatch (sha256): excepted="%s", actual="%s"' % (b64(partition.new_partition_info.hash), b64(partition_sha256_hash.digest())), file=sys.stderr)
+            else:
+                print('    Hash match (sha256): %s (size=%d)' % (b64(partition_sha256_hash.digest()), partition.new_partition_info.size))
+
 
             assert os.stat(image_file.name).st_size == partition.new_partition_info.size
 
