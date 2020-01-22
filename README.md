@@ -1,8 +1,9 @@
 # Payload Dumper
+`usage: payload_dumper.py [-h] [-v] [--old OLD_DIR] [--out OUT_DIR] [--check] payload.bin`
 
 ## Dependencies
-- python3
-- protobuf
+- [python3](https://docs.python.org/3/)
+- [protobuf](https://pypi.org/project/protobuf/)
 - [bsdiff](#bsdiff)
 - [puffin](#puffin)
 
@@ -10,15 +11,18 @@
 
 ### bsdiff
 ###### Source
-https://android.googlesource.com/platform/external/bsdiff/+archive/79d0acf62e249d4d3b38cd41e5b47bdee336145a.tar.gz
+- https://android.googlesource.com/platform/external/bsdiff/+/refs/tags/android-10.0.0_r25
 
-###### Dependencies
+###### Dependencies (OS: [Debian](https://www.debian.org/))
 - libbrotli-dev
 - libbz2-dev
 - libdivsufsort-dev
 
 ###### Build
 ```shell
+git submodule update --init
+cd bsdiff 
+
 make
 sudo cp bsdiff bspatch /usr/local/bin/
 sudo cp -r include/bsdiff /usr/local/include/bsdiff
@@ -28,22 +32,23 @@ sudo ldconfig
 
 ### puffin
 ###### Source
-https://android.googlesource.com/platform/external/puffin/+archive/bc7745523aef2d7f620ca16aa6ab11a8e38dc60e.tar.gz
+- https://android.googlesource.com/platform/external/puffin/+/refs/tags/android-10.0.0_r25
 
-###### Dependencies
-- protobuf-compiler
-- libgoogle-glog-dev
+###### Dependencies (OS: [Debian](https://www.debian.org/))
+- [bsdiff](#bsdiff)
 - libgflags-dev
-- libprotobuf-dev
+- libgoogle-glog-dev
 - libgtest-dev
-
-###### Patch
-```shell
-git apply puffin.patch
-```
+- libprotobuf-dev
+- protobuf-compiler
 
 ###### Build
 ```shell
+git submodule update --init
+cd puffin
+
+git apply ../puffin.patch
+
 protoc -Isrc --cpp_out=src src/puffin.proto
 make
 sudo cp puffin_binary /usr/local/bin/puffin
