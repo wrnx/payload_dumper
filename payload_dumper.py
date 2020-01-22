@@ -200,7 +200,11 @@ def dump_partition(args, block_size, data_offset, partition):
                     os.unlink(out_file.name)
                     return
         except FileNotFoundError as e:
-            print('    %s: %s' % (e.strerror, e.filename), file=sys.stderr)
+            print('    E: %s: %s' % (e.strerror, e.filename), file=sys.stderr)
+            os.unlink(out_file.name)
+            return
+        except AssertionError as e:
+            print('    E: Assertion error: Make sure the files are in the correct version and are not corrupted!')
             os.unlink(out_file.name)
             return
         except:
